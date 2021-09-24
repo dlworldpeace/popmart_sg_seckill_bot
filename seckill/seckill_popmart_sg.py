@@ -22,17 +22,6 @@ from config import global_config
 
 # 不变量
 MAX_RETRY_COUNT = 30
-CHECKOUT_EMAIL = "james_huang@hotmail.com"
-FIRST_NAME = "james"
-LAST_NAME = "huang"
-SHIPPING_ADDRESS = "Blk 123 Singapore"
-UNIT_NUMBER = "#01-01"
-POSTAL_CODE = "100100"
-PHONE_NUMBER = "9999 9999" #中间需要空格
-CARD_NUMBER = "1234 5678 1234 5678"
-NAME_ON_CARD = "james huang"
-CARD_EXPIRY_DATE = "01/99"
-CARD_SECURITY_CODE = "000"
 
 
 def default_chrome_path():
@@ -179,13 +168,13 @@ class ChromeDrive:
                                 except Exception as e:
                                     print("等待checkout界面加载...")
                                     sleep(0.01)
-                            self.enter_input(self.driver.find_element_by_id("checkout_email"), CHECKOUT_EMAIL)
-                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_first_name"), FIRST_NAME)
-                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_last_name"), LAST_NAME)
-                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_address1"), SHIPPING_ADDRESS)
-                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_address2"), UNIT_NUMBER)
-                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_zip"), POSTAL_CODE)
-                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_phone"), PHONE_NUMBER)
+                            self.enter_input(self.driver.find_element_by_id("checkout_email"), global_config.getRaw('config', 'CHECKOUT_EMAIL'))
+                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_first_name"), global_config.getRaw('config', 'FIRST_NAME'))
+                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_last_name"), global_config.getRaw('config', 'LAST_NAME'))
+                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_address1"), global_config.getRaw('config', 'SHIPPING_ADDRESS'))
+                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_address2"), global_config.getRaw('config', 'UNIT_NUMBER'))
+                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_zip"), global_config.getRaw('config', 'POSTAL_CODE'))
+                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_phone"), global_config.getRaw('config', 'PHONE_NUMBER'))
                             
                             while True:
                                 if submit_succ:
@@ -213,16 +202,16 @@ class ChromeDrive:
                                             
                                             # TODO: 这边的iframe逻辑还需要更新
                                             self.driver.switch_to.frame(self.driver.find_element_by_xpath(".//iframe[@title='Field container for: Card number']"))
-                                            self.enter_input(self.driver.find_element_by_id("number"), CARD_NUMBER)
+                                            self.enter_input(self.driver.find_element_by_id("number"), global_config.getRaw('config', 'CARD_NUMBER'))
                                             self.driver.switch_to.defaultContent()
                                             self.driver.switch_to.frame(self.driver.find_element_by_xpath(".//iframe[@title='Field container for: Name on card']"))
-                                            self.enter_input(self.driver.find_element_by_id("name"), NAME_ON_CARD)
+                                            self.enter_input(self.driver.find_element_by_id("name"), global_config.getRaw('config', 'NAME_ON_CARD'))
                                             self.driver.switch_to.defaultContent()
                                             self.driver.switch_to.frame(self.driver.find_element_by_xpath(".//iframe[@title='Field container for: Expiration date (MM / YY)']"))
-                                            self.enter_input(self.driver.find_element_by_id("expiry"), CARD_EXPIRY_DATE)
+                                            self.enter_input(self.driver.find_element_by_id("expiry"), global_config.getRaw('config', 'CARD_EXPIRY_DATE'))
                                             self.driver.switch_to.defaultContent()
                                             self.driver.switch_to.frame(self.driver.find_element_by_xpath(".//iframe[@title='Field container for: Security code"))
-                                            self.enter_input(self.driver.find_element_by_id("verification_value"), CARD_SECURITY_CODE)
+                                            self.enter_input(self.driver.find_element_by_id("verification_value"), global_config.getRaw('config', 'CARD_SECURITY_CODE'))
                                             self.driver.switch_to.defaultContent()
                                         
                                             click_submit_times = 0
