@@ -19,5 +19,5 @@ class Config(object):
     def getRaw(self, section, name):
         return self._configRaw.get(section, name)
 
-
+confidential_config = Config('confidential.ini')
 global_config = Config()

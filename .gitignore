@@ -36,3 +36,6 @@ hs_err_pid*
 
 # mac
 .DS_Store
+
+# confidential details
+confidential.ini

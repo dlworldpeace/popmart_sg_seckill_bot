@@ -14,14 +14,8 @@ from selenium.common.exceptions import WebDriverException
 import seckill.settings as utils_settings
 from utils.utils import get_useragent_data
 
-# from selenium.webdriver.common.by import By
-# from selenium.webdriver.support.ui import WebDriverWait
-# from selenium.webdriver.support import expected_conditions as EC
+from config import confidential_config
 from config import global_config
-
-
-# 不变量
-MAX_RETRY_COUNT = 30
 
 
 def default_chrome_path():
@@ -30,7 +24,6 @@ def default_chrome_path():
     if platform.system() == "Windows":
         if driver_dir:
             return os.path.abspath(os.path.join(driver_dir, "chromedriver.exe"))
-
         raise Exception("The chromedriver drive path attribute is not found.")
     else:
         if driver_dir:
@@ -63,7 +56,6 @@ class ChromeDrive:
         except WebDriverException:
             try:
                 driver = webdriver.Chrome(options=self.build_chrome_options(),executable_path=self.chrome_path, chrome_options=self.build_chrome_options())
-
 
             except WebDriverException:
                 raise
@@ -112,11 +104,22 @@ class ChromeDrive:
                 print("抢购时间点将近，停止自动刷新，准备进入抢购阶段...")
                 break
    
-    def enter_input(self, input_box, value):
+    def add_divider_in_middle(self, value):
+        return value[:len(value)//2] + ' / ' + value[len(value)//2:]
+   
+    ## enter_as_partitions: needed in iframe when enter in bulk will have some characters not entered
+    def enter_input(self, input_box, value, partition_size = None, with_divider = False):
+        input_box.click()
         input_box.clear()
-        input_box.send_keys(value)
+        if partition_size:
+            for index in range(0, int(len(value)/partition_size)):
+                input_box.send_keys(value[index * partition_size: index * partition_size + partition_size])
+        else:
+            input_box.send_keys(value)
+        if with_divider:
+            value = self.add_divider_in_middle(value)
         assert value == input_box.get_attribute("value"), "%s没有被填对，变成了%s" % (value, input_box.get_attribute("value"))
-
+        
     def sec_kill(self, item_url: str="https://popmart.sg/collections/pre-order/products/pre-order-pop-mart-yoki-rose-prince"):
         self._fetch_item_page(item_url)
         self._keep_waiting(item_url)
@@ -132,7 +135,7 @@ class ChromeDrive:
                 if submit_succ:
                     print("订单已经提交成功，无需继续抢购...")
                     break
-                if retry_count > MAX_RETRY_COUNT:
+                if retry_count > int(global_config.getRaw('config', 'MAX_RETRY_COUNT')):
                     print("重试抢购次数达到上限，放弃重试...")
                     break
                 
@@ -168,13 +171,13 @@ class ChromeDrive:
                                 except Exception as e:
                                     print("等待checkout界面加载...")
                                     sleep(0.01)
-                            self.enter_input(self.driver.find_element_by_id("checkout_email"), global_config.getRaw('config', 'CHECKOUT_EMAIL'))
-                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_first_name"), global_config.getRaw('config', 'FIRST_NAME'))
-                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_last_name"), global_config.getRaw('config', 'LAST_NAME'))
-                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_address1"), global_config.getRaw('config', 'SHIPPING_ADDRESS'))
-                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_address2"), global_config.getRaw('config', 'UNIT_NUMBER'))
-                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_zip"), global_config.getRaw('config', 'POSTAL_CODE'))
-                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_phone"), global_config.getRaw('config', 'PHONE_NUMBER'))
+                            self.enter_input(self.driver.find_element_by_id("checkout_email"), confidential_config.getRaw('config', 'CHECKOUT_EMAIL'))
+                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_first_name"), confidential_config.getRaw('config', 'FIRST_NAME'))
+                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_last_name"), confidential_config.getRaw('config', 'LAST_NAME'))
+                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_address1"), confidential_config.getRaw('config', 'SHIPPING_ADDRESS'))
+                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_address2"), confidential_config.getRaw('config', 'UNIT_NUMBER'))
+                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_zip"), confidential_config.getRaw('config', 'POSTAL_CODE'))
+                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_phone"), confidential_config.getRaw('config', 'PHONE_NUMBER'))
                             
                             while True:
                                 if submit_succ:
@@ -200,19 +203,19 @@ class ChromeDrive:
                                             continue_button.click()
                                             print("已经点击continue to payment按钮")
                                             
-                                            # TODO: 这边的iframe逻辑还需要更新
+                                            # Handle multiple iframes in payment details page
                                             self.driver.switch_to.frame(self.driver.find_element_by_xpath(".//iframe[@title='Field container for: Card number']"))
-                                            self.enter_input(self.driver.find_element_by_id("number"), global_config.getRaw('config', 'CARD_NUMBER'))
-                                            self.driver.switch_to.defaultContent()
+                                            self.enter_input(self.driver.find_element_by_id("number"), confidential_config.getRaw('config', 'CARD_NUMBER'), partition_size = 4)
+                                            self.driver.switch_to.default_content()
                                             self.driver.switch_to.frame(self.driver.find_element_by_xpath(".//iframe[@title='Field container for: Name on card']"))
-                                            self.enter_input(self.driver.find_element_by_id("name"), global_config.getRaw('config', 'NAME_ON_CARD'))
-                                            self.driver.switch_to.defaultContent()
+                                            self.enter_input(self.driver.find_element_by_id("name"), confidential_config.getRaw('config', 'NAME_ON_CARD'))
+                                            self.driver.switch_to.default_content()
                                             self.driver.switch_to.frame(self.driver.find_element_by_xpath(".//iframe[@title='Field container for: Expiration date (MM / YY)']"))
-                                            self.enter_input(self.driver.find_element_by_id("expiry"), global_config.getRaw('config', 'CARD_EXPIRY_DATE'))
-                                            self.driver.switch_to.defaultContent()
-                                            self.driver.switch_to.frame(self.driver.find_element_by_xpath(".//iframe[@title='Field container for: Security code"))
-                                            self.enter_input(self.driver.find_element_by_id("verification_value"), global_config.getRaw('config', 'CARD_SECURITY_CODE'))
-                                            self.driver.switch_to.defaultContent()
+                                            self.enter_input(self.driver.find_element_by_id("expiry"), confidential_config.getRaw('config', 'CARD_EXPIRY_DATE'), partition_size = 2, with_divider = True)
+                                            self.driver.switch_to.default_content()
+                                            self.driver.switch_to.frame(self.driver.find_element_by_xpath(".//iframe[@title='Field container for: Security code']"))
+                                            self.enter_input(self.driver.find_element_by_id("verification_value"), confidential_config.getRaw('config', 'CARD_SECURITY_CODE'))
+                                            self.driver.switch_to.default_content()
                                         
                                             click_submit_times = 0
                                             while True:
