@@ -120,7 +120,7 @@ class ChromeDrive:
             value = self.add_divider_in_middle(value)
         assert value == input_box.get_attribute("value"), "%s没有被填对，变成了%s" % (value, input_box.get_attribute("value"))
         
-    def sec_kill(self, item_url: str="https://popmart.sg/collections/pre-order/products/pre-order-pop-mart-yoki-rose-prince"):
+    def sec_kill(self, item_url: str="https://popmart.sg/collections/pre-order/products/pre-order-pop-mart-minions-the-rise-of-gru-series"):
         self._fetch_item_page(item_url)
         self._keep_waiting(item_url)
                 
@@ -139,112 +139,115 @@ class ChromeDrive:
                     print("重试抢购次数达到上限，放弃重试...")
                     break
                 
-                add_to_cart_button = self.driver.find_element_by_name("add")
-                if add_to_cart_button and add_to_cart_button.is_enabled():
+                while True:
                     try:
-                        add_to_cart_button.click()
-                        print("已经点击add to cart按钮...")
+                        add_to_cart_button = self.driver.find_element_by_name("add")
+                        if add_to_cart_button and add_to_cart_button.is_enabled():
+                            add_to_cart_button.click()
+                            break
                     except Exception as e:
-                        print("add to cart失败, 重试...")
+                        print("没发现有效add to cart按钮, 页面未加载, 重试...")
                         print(e)
-                        continue
+                print("已经点击add to cart按钮...")
+                    
+                while True:
+                    if submit_succ:
+                        break
                     
                     while True:
-                        if submit_succ:
+                        try:
+                            self.driver.find_element_by_name("checkout").is_enabled()
                             break
-                        
-                        checkout_button = self.driver.find_element_by_name("checkout")
-                        if checkout_button and checkout_button.is_enabled():
-                            try:
-                                checkout_button.click()
-                                print("已经点击checkout按钮...")
-                                # TODO: 这边经常没有点击成功，需要检查
-                            except Exception as e:
-                                print("checkout失败, 重试...")
-                                print(e)
-                                continue
-                            
-                            while True:
-                                try:
-                                    self.driver.find_element_by_id("checkout_email") # 等待checkout界面加载
-                                    break
-                                except Exception as e:
-                                    print("等待checkout界面加载...")
-                                    sleep(0.01)
-                            self.enter_input(self.driver.find_element_by_id("checkout_email"), confidential_config.getRaw('config', 'CHECKOUT_EMAIL'))
-                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_first_name"), confidential_config.getRaw('config', 'FIRST_NAME'))
-                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_last_name"), confidential_config.getRaw('config', 'LAST_NAME'))
-                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_address1"), confidential_config.getRaw('config', 'SHIPPING_ADDRESS'))
-                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_address2"), confidential_config.getRaw('config', 'UNIT_NUMBER'))
-                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_zip"), confidential_config.getRaw('config', 'POSTAL_CODE'))
-                            self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_phone"), confidential_config.getRaw('config', 'PHONE_NUMBER'))
-                            
-                            while True:
-                                if submit_succ:
-                                    break
-                        
-                                continue_button = self.driver.find_element_by_id("continue_button")
-                                if continue_button and continue_button.is_enabled():
-                                    continue_button.click()
-                                    print("已经点击continue to shipping按钮")
-                                    
-                                    try:
-                                        print("购物车总应付：%s" % self.driver.find_elements_by_xpath('.//span[@class = "payment-due__price"]')[0].text)
-                                    except Exception as e:
-                                        print(e)
-                                        print("没发现购物车总应付，直接继续去付款")
-                                    
-                                    while True:
-                                        if submit_succ:
-                                            break
-                                    
-                                        continue_button = self.driver.find_element_by_id("continue_button")
-                                        if continue_button and continue_button.is_enabled():
-                                            continue_button.click()
-                                            print("已经点击continue to payment按钮")
-                                            
-                                            # Handle multiple iframes in payment details page
-                                            self.driver.switch_to.frame(self.driver.find_element_by_xpath(".//iframe[@title='Field container for: Card number']"))
-                                            self.enter_input(self.driver.find_element_by_id("number"), confidential_config.getRaw('config', 'CARD_NUMBER'), partition_size = 4)
-                                            self.driver.switch_to.default_content()
-                                            self.driver.switch_to.frame(self.driver.find_element_by_xpath(".//iframe[@title='Field container for: Name on card']"))
-                                            self.enter_input(self.driver.find_element_by_id("name"), confidential_config.getRaw('config', 'NAME_ON_CARD'))
-                                            self.driver.switch_to.default_content()
-                                            self.driver.switch_to.frame(self.driver.find_element_by_xpath(".//iframe[@title='Field container for: Expiration date (MM / YY)']"))
-                                            self.enter_input(self.driver.find_element_by_id("expiry"), confidential_config.getRaw('config', 'CARD_EXPIRY_DATE'), partition_size = 2, with_divider = True)
-                                            self.driver.switch_to.default_content()
-                                            self.driver.switch_to.frame(self.driver.find_element_by_xpath(".//iframe[@title='Field container for: Security code']"))
-                                            self.enter_input(self.driver.find_element_by_id("verification_value"), confidential_config.getRaw('config', 'CARD_SECURITY_CODE'))
-                                            self.driver.switch_to.default_content()
-                                        
-                                            click_submit_times = 0
-                                            while True:
-                                                try:
-                                                    continue_button = self.driver.find_element_by_id("continue_button")
-                                                    if click_submit_times < 10 and continue_button.is_enabled():
-                                                        continue_button.click()
-                                                        print("已经点击提交订单按钮")
-                                                        submit_succ = True
-                                                        break
-                                                    else:
-                                                        print("提交订单失败...大于10次，直接就失败吧。试了也没用了。 ")
-                                                        return
-                                                except Exception as e:
-                                                    # TODO 待优化，这里可能需要返回购物车页面继续进行,也可能结算按钮点击了但是还没有跳转
-                                                    #     self.driver.find_element_by_link_text('我的购物车').click()
-                                                    print("没发现提交按钮, 页面未加载, 重试...")
-                                                    click_submit_times = click_submit_times + 1
-                                                    sleep(0.01)
-                                        else:
-                                            print("没发现有效continue to payment按钮, 页面未加载, 重试...")
-                                            sleep(0.01)
-                                else:
-                                    print("没发现有效continue to shipping按钮, 页面未加载, 重试...")
-                                    sleep(0.01)
-                        else:
-                            print("没发现有效check out按钮, 页面未加载, 重试...")
+                        except Exception as e:
+                            print("等待Checkout界面加载...")
+                            print(e)
                             sleep(0.01)
-                else:
-                    print("没发现有效add to cart按钮, 页面未加载, 重试...")
+                    print("Checkout界面加载完毕")
+                    
+                    while True:
+                        try:
+                            self.driver.find_element_by_name("checkout").click()
+                            sleep(0.01)                             
+                        except Exception as e:
+                            break # 已经进入了Shipping界面，所以Checkout按键点不了了
+                    print("已经点击checkout按钮...")
+                            
+                    while True:
+                        try:
+                            self.driver.find_element_by_id("checkout_email").is_enabled()
+                            break
+                        except Exception as e:
+                            print("没发现有效Shipping填空项, 页面未加载, 重试...")
+                            print(e)
+                            sleep(0.01)
+                    print("Shipping界面加载完毕，开始填写")
+                    
+                    self.enter_input(self.driver.find_element_by_id("checkout_email"), confidential_config.getRaw('config', 'CHECKOUT_EMAIL'))
+                    self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_first_name"), confidential_config.getRaw('config', 'FIRST_NAME'))
+                    self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_last_name"), confidential_config.getRaw('config', 'LAST_NAME'))
+                    self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_address1"), confidential_config.getRaw('config', 'SHIPPING_ADDRESS'))
+                    self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_address2"), confidential_config.getRaw('config', 'UNIT_NUMBER'))
+                    self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_zip"), confidential_config.getRaw('config', 'POSTAL_CODE'))
+                    self.enter_input(self.driver.find_element_by_id("checkout_shipping_address_phone"), confidential_config.getRaw('config', 'PHONE_NUMBER'))
+                    print("Shipping界面填写完毕")
+                    
+                    while True:
+                        try:
+                            self.driver.find_element_by_id("continue_button").click()
+                            break
+                        except Exception as e:
+                            print("没发现有效continue to shipping按钮, 页面未加载, 重试...")
+                            print(e)
+                            sleep(0.01)
+                    print("已经点击continue to shipping按钮")
+                                                            
+                    try:
+                        print("购物车总应付：%s" % self.driver.find_elements_by_xpath('.//span[@class = "payment-due__price"]')[0].text)
+                    except Exception as e:
+                        print(e)
+                        print("没发现购物车总应付，直接继续去付款")
+                            
+                    while True:
+                        try:
+                            self.driver.find_element_by_id("continue_button").click()
+                            break
+                        except Exception as e:
+                            print("没发现有效continue to payment按钮, 页面未加载, 重试...")
+                            print(e)
+                            sleep(0.01)
+                    print("已经点击continue to payment按钮")
+                            
+                    # Handle multiple iframes in payment details page
+                    self.driver.switch_to.frame(self.driver.find_element_by_xpath(".//iframe[@title='Field container for: Card number']"))
+                    self.enter_input(self.driver.find_element_by_id("number"), confidential_config.getRaw('config', 'CARD_NUMBER'), partition_size = 4)
+                    self.driver.switch_to.default_content()
+                    self.driver.switch_to.frame(self.driver.find_element_by_xpath(".//iframe[@title='Field container for: Name on card']"))
+                    self.enter_input(self.driver.find_element_by_id("name"), confidential_config.getRaw('config', 'NAME_ON_CARD'))
+                    self.driver.switch_to.default_content()
+                    self.driver.switch_to.frame(self.driver.find_element_by_xpath(".//iframe[@title='Field container for: Expiration date (MM / YY)']"))
+                    self.enter_input(self.driver.find_element_by_id("expiry"), confidential_config.getRaw('config', 'CARD_EXPIRY_DATE'), partition_size = 2, with_divider = True)
+                    self.driver.switch_to.default_content()
+                    self.driver.switch_to.frame(self.driver.find_element_by_xpath(".//iframe[@title='Field container for: Security code']"))
+                    self.enter_input(self.driver.find_element_by_id("verification_value"), confidential_config.getRaw('config', 'CARD_SECURITY_CODE'))
+                    self.driver.switch_to.default_content()
+                        
+                    click_submit_times = 0
+                    while True:
+                        try:
+                            continue_button = self.driver.find_element_by_id("continue_button")
+                            if click_submit_times < 10 and continue_button.is_enabled():
+                                continue_button.click()
+                                print("已经点击提交订单按钮")
+                                submit_succ = True
+                                break
+                            else:
+                                print("提交订单失败...大于10次，直接就失败吧。试了也没用了。 ")
+                                return
+                        except Exception as e:
+                            # TODO 待优化，这里可能需要返回购物车页面继续进行,也可能结算按钮点击了但是还没有跳转
+                            #     self.driver.find_element_by_link_text('我的购物车').click()
+                            print("没发现提交按钮, 页面未加载, 重试...")
+                            click_submit_times = click_submit_times + 1
+                            sleep(0.01)
             else:
                 sleep(0.1)
